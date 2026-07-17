@@ -399,92 +399,86 @@ export function convertColorFormat(input: ThemeColors) {
 		} else {
 			resultObj[rule] = value
 		}
+	}
 
-		// auto generate base colors
-		if (!Object.hasOwn(input, "base-100")) {
-			resultObj["--b1"] = "100% 0 0"
+	// auto generate base colors
+	if (!Object.hasOwn(input, "base-100")) {
+		resultObj["--b1"] = "100% 0 0"
+	}
+	if (!Object.hasOwn(input, "base-200")) {
+		resultObj["--b2"] = generateDarkenColorFrom(input["base-100"], 0.07)
+	}
+	if (!Object.hasOwn(input, "base-300")) {
+		if (Object.hasOwn(input, "base-200")) {
+			resultObj["--b3"] = generateDarkenColorFrom(input["base-200"], 0.07)
+		} else {
+			resultObj["--b3"] = generateDarkenColorFrom(input["base-100"], 0.14)
 		}
-		if (!Object.hasOwn(input, "base-200")) {
-			resultObj["--b2"] = generateDarkenColorFrom(input["base-100"], 0.07)
-		}
-		if (!Object.hasOwn(input, "base-300")) {
-			if (Object.hasOwn(input, "base-200")) {
-				resultObj["--b3"] = generateDarkenColorFrom(input["base-200"], 0.07)
-			} else {
-				resultObj["--b3"] = generateDarkenColorFrom(input["base-100"], 0.14)
-			}
-		}
+	}
 
-		// auto generate state colors
-		if (!Object.hasOwn(input, "info")) {
-			resultObj["--in"] = "72.06% 0.191 231.6"
-		}
-		if (!Object.hasOwn(input, "success")) {
-			resultObj["--su"] = "64.8% 0.150 160"
-		}
-		if (!Object.hasOwn(input, "warning")) {
-			resultObj["--wa"] = "84.71% 0.199 83.87"
-		}
-		if (!Object.hasOwn(input, "error")) {
-			resultObj["--er"] = "71.76% 0.221 22.18"
-		}
+	// auto generate state colors
+	if (!Object.hasOwn(input, "info")) {
+		resultObj["--in"] = "72.06% 0.191 231.6"
+	}
+	if (!Object.hasOwn(input, "success")) {
+		resultObj["--su"] = "64.8% 0.150 160"
+	}
+	if (!Object.hasOwn(input, "warning")) {
+		resultObj["--wa"] = "84.71% 0.199 83.87"
+	}
+	if (!Object.hasOwn(input, "error")) {
+		resultObj["--er"] = "71.76% 0.221 22.18"
+	}
 
-		// auto generate content colors
-		if (!Object.hasOwn(input, "base-content")) {
-			resultObj["--bc"] = generateForegroundColorFrom(input["base-100"], 0.8)
+	// auto generate content colors
+	if (!Object.hasOwn(input, "base-content")) {
+		resultObj["--bc"] = generateForegroundColorFrom(input["base-100"], 0.8)
+	}
+	if (!Object.hasOwn(input, "primary-content")) {
+		resultObj["--pc"] = generateForegroundColorFrom(input.primary, 0.8)
+	}
+	if (!Object.hasOwn(input, "secondary-content")) {
+		resultObj["--sc"] = generateForegroundColorFrom(input.secondary, 0.8)
+	}
+	if (!Object.hasOwn(input, "accent-content")) {
+		resultObj["--ac"] = generateForegroundColorFrom(input.accent, 0.8)
+	}
+	if (!Object.hasOwn(input, "neutral-content")) {
+		resultObj["--nc"] = generateForegroundColorFrom(input.neutral, 0.8)
+	}
+	if (!Object.hasOwn(input, "info-content")) {
+		if (Object.hasOwn(input, "info")) {
+			resultObj["--inc"] = generateForegroundColorFrom(input.info, 0.8)
+		} else {
+			resultObj["--inc"] = "0% 0 0"
 		}
-		if (!Object.hasOwn(input, "primary-content")) {
-			resultObj["--pc"] = generateForegroundColorFrom(input.primary, 0.8)
+	}
+	if (!Object.hasOwn(input, "success-content")) {
+		if (Object.hasOwn(input, "success")) {
+			resultObj["--suc"] = generateForegroundColorFrom(input.success, 0.8)
+		} else {
+			resultObj["--suc"] = "0% 0 0"
 		}
-		if (!Object.hasOwn(input, "secondary-content")) {
-			resultObj["--sc"] = generateForegroundColorFrom(input.secondary, 0.8)
+	}
+	if (!Object.hasOwn(input, "warning-content")) {
+		if (Object.hasOwn(input, "warning")) {
+			resultObj["--wac"] = generateForegroundColorFrom(input.warning, 0.8)
+		} else {
+			resultObj["--wac"] = "0% 0 0"
 		}
-		if (!Object.hasOwn(input, "accent-content")) {
-			resultObj["--ac"] = generateForegroundColorFrom(input.accent, 0.8)
+	}
+	if (!Object.hasOwn(input, "error-content")) {
+		if (Object.hasOwn(input, "error")) {
+			resultObj["--erc"] = generateForegroundColorFrom(input.error, 0.8)
+		} else {
+			resultObj["--erc"] = "0% 0 0"
 		}
-		if (!Object.hasOwn(input, "neutral-content")) {
-			resultObj["--nc"] = generateForegroundColorFrom(input.neutral, 0.8)
-		}
-		if (!Object.hasOwn(input, "info-content")) {
-			if (Object.hasOwn(input, "info")) {
-				resultObj["--inc"] = generateForegroundColorFrom(input.info, 0.8)
-			} else {
-				resultObj["--inc"] = "0% 0 0"
-			}
-		}
-		if (!Object.hasOwn(input, "success-content")) {
-			if (Object.hasOwn(input, "success")) {
-				resultObj["--suc"] = generateForegroundColorFrom(input.success, 0.8)
-			} else {
-				resultObj["--suc"] = "0% 0 0"
-			}
-		}
-		if (!Object.hasOwn(input, "warning-content")) {
-			if (Object.hasOwn(input, "warning")) {
-				resultObj["--wac"] = generateForegroundColorFrom(input.warning, 0.8)
-			} else {
-				resultObj["--wac"] = "0% 0 0"
-			}
-		}
-		if (!Object.hasOwn(input, "error-content")) {
-			if (Object.hasOwn(input, "error")) {
-				resultObj["--erc"] = generateForegroundColorFrom(input.error, 0.8)
-			} else {
-				resultObj["--erc"] = "0% 0 0"
-			}
-		}
+	}
 
-		// add css variables if not exist
-		for (const item of Object.entries(defaultVariables)) {
-			const [variable, value] = item
-			if (!Object.hasOwn(input, variable)) {
-				resultObj[variable] = value
-			}
-		}
-
-		// add other custom styles
-		if (!Object.hasOwn(colorNames, rule)) {
-			resultObj[rule] = value
+	// add css variables if not exist
+	for (const [variable, value] of Object.entries(defaultVariables)) {
+		if (!Object.hasOwn(input, variable)) {
+			resultObj[variable] = value
 		}
 	}
 

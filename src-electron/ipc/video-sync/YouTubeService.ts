@@ -13,6 +13,21 @@ interface YouTubeServiceEvents {
 	downloadProgress: (progress: VideoDownloadProgress) => void
 }
 
+/** Shape of the fields Bridge reads from a yt-dlp `--dump-json` entry */
+interface YtDlpEntry {
+	id?: string
+	title?: string
+	channel?: string
+	uploader?: string
+	duration?: number
+	thumbnail?: string
+	thumbnails?: Array<{ url?: string } | string>
+	upload_date?: string
+	view_count?: number
+	url?: string
+	webpage_url?: string
+}
+
 class YouTubeService extends EventEmitter<YouTubeServiceEvents> {
 	private ytDlpPath: string = 'yt-dlp'  // Assumes yt-dlp is in PATH
 	private ffmpegPath: string = 'ffmpeg'  // Assumes ffmpeg is in PATH
@@ -39,10 +54,11 @@ class YouTubeService extends EventEmitter<YouTubeServiceEvents> {
 	/**
 	 * Get thumbnail URL for different sources
 	 */
-	private getThumbnailUrl(data: any, source: string): string {
+	private getThumbnailUrl(data: YtDlpEntry, source: string): string {
 		if (data.thumbnail) return data.thumbnail
 		if (data.thumbnails && data.thumbnails.length > 0) {
-			return data.thumbnails[0].url || data.thumbnails[0]
+			const first = data.thumbnails[0]
+			return (typeof first === 'string' ? first : first.url) || ''
 		}
 		// Fallback for YouTube
 		if (source === 'youtube' && data.id) {
@@ -89,7 +105,7 @@ class YouTubeService extends EventEmitter<YouTubeServiceEvents> {
 
 					for (const line of lines) {
 						try {
-							const data = JSON.parse(line)
+							const data = JSON.parse(line) as YtDlpEntry
 							if (data.id && data.title) {
 								results.push({
 									videoId: data.id,
@@ -151,14 +167,14 @@ class YouTubeService extends EventEmitter<YouTubeServiceEvents> {
 				}
 
 				try {
-					const data = JSON.parse(stdout)
+					const data = JSON.parse(stdout) as YtDlpEntry
 					resolve({
-						videoId: data.id,
-						title: data.title,
+						videoId: data.id || '',
+						title: data.title || '',
 						channel: data.channel || data.uploader || 'Unknown',
 						duration: this.formatDuration(data.duration),
 						durationSeconds: data.duration || 0,
-						thumbnailUrl: data.thumbnail,
+						thumbnailUrl: data.thumbnail || '',
 						publishedAt: data.upload_date || '',
 						viewCount: data.view_count,
 					})

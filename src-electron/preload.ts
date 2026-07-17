@@ -13,7 +13,9 @@ function getEmitter<K extends keyof IpcToMainEmitEvents>(key: K) {
 
 function getListenerAdder<K extends keyof IpcFromMainEmitEvents>(key: K) {
 	return (listener: (data: IpcFromMainEmitEvents[K]) => void) => {
-		electron.ipcRenderer.on(key, (_event: IpcRendererEvent, ...results: IpcFromMainEmitEvents[K][]) => listener(results[0]))
+		const wrappedListener = (_event: IpcRendererEvent, ...results: IpcFromMainEmitEvents[K][]) => listener(results[0])
+		electron.ipcRenderer.on(key, wrappedListener)
+		return () => electron.ipcRenderer.removeListener(key, wrappedListener)
 	}
 }
 

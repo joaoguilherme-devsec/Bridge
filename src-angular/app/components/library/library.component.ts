@@ -732,24 +732,25 @@ export class LibraryComponent implements OnInit, OnDestroy, AfterViewInit {
 	renderCharterName(charter: string | null): SafeHtml {
 		if (!charter) return ''
 
-		// Parse <color=X>text</color> or <color=#XXXXXX>text</color> tags
-		let result = charter
+		// Parse <color=X>text</color> or <color=#XXXXXX>text</color> tags (with or without a closing tag).
+		// Everything that isn't part of a recognized color tag is HTML-escaped, so no markup from the
+		// (untrusted, chart-supplied) input can ever reach bypassSecurityTrustHtml unescaped.
+		const colorTagPattern = /<color=([^>]+)>([^<]*)(?:<\/color>)?/gi
 
-		// Handle <color=name>text</color> and <color=#hex>text</color>
-		result = result.replace(/<color=([^>]+)>([^<]*)<\/color>/gi, (_, color, text) => {
-			// Sanitize color value - only allow valid color names or hex codes
+		let result = ''
+		let lastIndex = 0
+		let match: RegExpExecArray | null
+
+		while ((match = colorTagPattern.exec(charter)) !== null) {
+			result += this.escapeHtml(charter.slice(lastIndex, match.index))
+
+			const [, color, text] = match
 			const safeColor = this.sanitizeColor(color)
-			return `<span style="color: ${safeColor}">${this.escapeHtml(text)}</span>`
-		})
+			result += `<span style="color: ${safeColor}">${this.escapeHtml(text)}</span>`
 
-		// Handle unclosed color tags like <color=orange>text (rest of string)
-		result = result.replace(/<color=([^>]+)>([^<]*)/gi, (_, color, text) => {
-			const safeColor = this.sanitizeColor(color)
-			return `<span style="color: ${safeColor}">${this.escapeHtml(text)}</span>`
-		})
-
-		// Remove any remaining HTML tags for safety
-		result = result.replace(/<(?!\/?span)[^>]+>/g, '')
+			lastIndex = match.index + match[0].length
+		}
+		result += this.escapeHtml(charter.slice(lastIndex))
 
 		return this.sanitizer.bypassSecurityTrustHtml(result)
 	}

@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, inject, signal } from '@angular/core'
+import { Component, ElementRef, OnDestroy, ViewChild, inject, signal } from '@angular/core'
 
 import { SettingsService } from 'src-angular/app/core/services/settings.service'
 
@@ -8,7 +8,7 @@ import { SettingsService } from 'src-angular/app/core/services/settings.service'
 	imports: [],
 	templateUrl: './tools.component.html',
 })
-export class ToolsComponent {
+export class ToolsComponent implements OnDestroy {
 	settingsService = inject(SettingsService)
 
 	@ViewChild('themeDropdown', { static: true }) themeDropdown: ElementRef
@@ -18,8 +18,10 @@ export class ToolsComponent {
 	buttonText = signal('Scan for issues')
 	scanErrorText = signal('')
 
+	private unsubscribeUpdateIssueScan: () => void
+
 	constructor() {
-		window.electron.on.updateIssueScan(({ status, message }) => {
+		this.unsubscribeUpdateIssueScan = window.electron.on.updateIssueScan(({ status, message }) => {
 			if (status === 'progress') {
 				this.buttonText.set(message)
 			} else if (status === 'error') {
@@ -31,6 +33,10 @@ export class ToolsComponent {
 				this.buttonText.set(message + ' (click to scan again)')
 			}
 		})
+	}
+
+	ngOnDestroy() {
+		this.unsubscribeUpdateIssueScan()
 	}
 
 	openIssueScanDirectory() {

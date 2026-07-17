@@ -168,17 +168,23 @@ class CatalogDatabase {
 	}
 
 	private addColumnIfNotExists(table: string, column: string, type: string): void {
+		// Check if table exists first
+		const tableExists = this.db.prepare(
+			`SELECT name FROM sqlite_master WHERE type='table' AND name=?`
+		).get(table)
+
+		if (!tableExists) return // Table doesn't exist yet, will be created with column
+
 		try {
-			// Check if table exists first
-			const tableExists = this.db.prepare(
-				`SELECT name FROM sqlite_master WHERE type='table' AND name=?`
-			).get(table)
-
-			if (!tableExists) return // Table doesn't exist yet, will be created with column
-
 			this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`)
-		} catch {
-			// Column already exists or table doesn't exist
+		} catch (err) {
+			// SQLite has no "ADD COLUMN IF NOT EXISTS"; this is the expected way to detect the column
+			// already existing on a database from a previous version. Anything else (disk full,
+			// corruption, permissions) should surface instead of silently leaving the schema stale.
+			if (err instanceof Error && err.message.includes('duplicate column name')) {
+				return
+			}
+			throw err
 		}
 	}
 
@@ -317,7 +323,11 @@ class CatalogDatabase {
 		}
 	}
 
-	upsertChart(chart: Omit<ChartRecord, 'id'>): number {
+	/**
+	 * Returns the shared prepared upsert statement, preparing and caching it on first use.
+	 * Shared by upsertChart and upsertChartsBatch so the SQL is defined in exactly one place.
+	 */
+	private getUpsertChartStmt(): Database.Statement {
 		const cacheKey = 'upsertChart'
 		let stmt = this.stmtCache.get(cacheKey)
 
@@ -387,8 +397,12 @@ class CatalogDatabase {
 			this.stmtCache.set(cacheKey, stmt)
 		}
 
-		const result = stmt.run(this.chartToDbParams(chart))
-		return result.lastInsertRowid as number
+		return stmt
+	}
+
+	upsertChart(chart: Omit<ChartRecord, 'id'>): number {
+		const [id] = this.upsertChartsBatch([chart])
+		return id
 	}
 
 	getCharts(filter: CatalogFilter = {}): ChartRecord[] {
@@ -699,79 +713,12 @@ class CatalogDatabase {
 	upsertChartsBatch(charts: Array<Omit<ChartRecord, 'id'>>): number[] {
 		if (charts.length === 0) return []
 
-		const cacheKey = 'upsertChart'
-		let stmt = this.stmtCache.get(cacheKey)
-
-		if (!stmt) {
-			stmt = this.db.prepare(`
-        INSERT INTO charts (
-          path, name, artist, album, genre, year, charter,
-          diff_guitar, diff_bass, diff_drums, diff_keys, diff_vocals,
-          diff_rhythm, diff_guitarghl, diff_bassghl,
-          hasGuitar, hasBass, hasDrums, hasKeys, hasVocals, hasRhythm, hasGHL,
-          guitarDiffs, bassDiffs, drumsDiffs, keysDiffs, vocalsDiffs, rhythmDiffs, ghlGuitarDiffs, ghlBassDiffs,
-          chartType,
-          hasVideo, hasBackground, hasAlbumArt, hasStems, hasLyrics,
-          songLength, previewStart, chorusId, folderHash, lastScanned
-        ) VALUES (
-          @path, @name, @artist, @album, @genre, @year, @charter,
-          @diff_guitar, @diff_bass, @diff_drums, @diff_keys, @diff_vocals,
-          @diff_rhythm, @diff_guitarghl, @diff_bassghl,
-          @hasGuitar, @hasBass, @hasDrums, @hasKeys, @hasVocals, @hasRhythm, @hasGHL,
-          @guitarDiffs, @bassDiffs, @drumsDiffs, @keysDiffs, @vocalsDiffs, @rhythmDiffs, @ghlGuitarDiffs, @ghlBassDiffs,
-          @chartType,
-          @hasVideo, @hasBackground, @hasAlbumArt, @hasStems, @hasLyrics,
-          @songLength, @previewStart, @chorusId, @folderHash, @lastScanned
-        )
-        ON CONFLICT(path) DO UPDATE SET
-          name = excluded.name,
-          artist = excluded.artist,
-          album = excluded.album,
-          genre = excluded.genre,
-          year = excluded.year,
-          charter = excluded.charter,
-          diff_guitar = excluded.diff_guitar,
-          diff_bass = excluded.diff_bass,
-          diff_drums = excluded.diff_drums,
-          diff_keys = excluded.diff_keys,
-          diff_vocals = excluded.diff_vocals,
-          diff_rhythm = excluded.diff_rhythm,
-          diff_guitarghl = excluded.diff_guitarghl,
-          diff_bassghl = excluded.diff_bassghl,
-          hasGuitar = excluded.hasGuitar,
-          hasBass = excluded.hasBass,
-          hasDrums = excluded.hasDrums,
-          hasKeys = excluded.hasKeys,
-          hasVocals = excluded.hasVocals,
-          hasRhythm = excluded.hasRhythm,
-          hasGHL = excluded.hasGHL,
-          guitarDiffs = excluded.guitarDiffs,
-          bassDiffs = excluded.bassDiffs,
-          drumsDiffs = excluded.drumsDiffs,
-          keysDiffs = excluded.keysDiffs,
-          vocalsDiffs = excluded.vocalsDiffs,
-          rhythmDiffs = excluded.rhythmDiffs,
-          ghlGuitarDiffs = excluded.ghlGuitarDiffs,
-          ghlBassDiffs = excluded.ghlBassDiffs,
-          chartType = excluded.chartType,
-          hasVideo = excluded.hasVideo,
-          hasBackground = excluded.hasBackground,
-          hasAlbumArt = excluded.hasAlbumArt,
-          hasStems = excluded.hasStems,
-          hasLyrics = excluded.hasLyrics,
-          songLength = excluded.songLength,
-          previewStart = excluded.previewStart,
-          chorusId = excluded.chorusId,
-          folderHash = excluded.folderHash,
-          lastScanned = excluded.lastScanned
-      `)
-			this.stmtCache.set(cacheKey, stmt)
-		}
+		const stmt = this.getUpsertChartStmt()
 
 		const ids: number[] = []
 		const batchUpsert = this.db.transaction(() => {
 			for (const chart of charts) {
-				const result = stmt!.run(this.chartToDbParams(chart))
+				const result = stmt.run(this.chartToDbParams(chart))
 				ids.push(result.lastInsertRowid as number)
 			}
 		})

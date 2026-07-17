@@ -303,5 +303,5 @@ export interface IpcFromMainEmitEvents {
 }
 
 export type IpcFromMainEmitHandlers = {
-	[K in keyof IpcFromMainEmitEvents]: (listener: (data: IpcFromMainEmitEvents[K]) => void) => void
+	[K in keyof IpcFromMainEmitEvents]: (listener: (data: IpcFromMainEmitEvents[K]) => void) => () => void
 }

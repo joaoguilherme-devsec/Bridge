@@ -209,7 +209,12 @@ class ChartScanner extends EventEmitter<ScannerEvents> {
 
 			let entries: fs.Dirent[]
 			try {
-				entries = await fs.promises.readdir(dirPath, { withFileTypes: true })
+				// Bounded via scanLimiter so a directory with thousands of sibling folders doesn't open
+				// that many readdir syscalls at once (important on slow/networked drives). Only the
+				// readdir call itself is throttled, not the recursive await chain below it - limiting
+				// the whole subtree traversal would deadlock once every pool slot is held by a directory
+				// waiting on its own children to get a slot from that same, already-exhausted pool.
+				entries = await this.scanLimiter.schedule(() => fs.promises.readdir(dirPath, { withFileTypes: true }))
 			} catch {
 				return
 			}

@@ -94,8 +94,8 @@ export class ChartDownload {
 			}
 		} catch (err) {
 			this.showProgress.cancel()
-			if (err.header && (err.body || err.body === '')) {
-				this.eventEmitter.emit('error', err)
+			if (err && typeof err === 'object' && 'header' in err && 'body' in err) {
+				this.eventEmitter.emit('error', err as DownloadMessage)
 			} else {
 				this.eventEmitter.emit('error', { header: 'Unknown Error', body: inspect(err) })
 			}

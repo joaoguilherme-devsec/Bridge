@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core'
+import { Component, OnDestroy, OnInit, signal } from '@angular/core'
 import { RouterLink, RouterLinkActive } from '@angular/router'
 import { NgClass } from '@angular/common'
 
@@ -8,27 +8,34 @@ import { NgClass } from '@angular/common'
 	imports: [RouterLink, RouterLinkActive, NgClass],
 	templateUrl: './toolbar.component.html',
 })
-export class ToolbarComponent implements OnInit {
+export class ToolbarComponent implements OnInit, OnDestroy {
 
 	isMaximized = signal(false)
 	updateAvailable = signal<'yes' | 'no' | 'error'>('no')
 
+	private unsubscribeListeners: Array<() => void> = []
+
 	async ngOnInit() {
 		this.isMaximized.set(await window.electron.invoke.isMaximized())
-		window.electron.on.minimized(() => {
-			this.isMaximized.set(false)
-		})
-		window.electron.on.maximized(() => {
-			this.isMaximized.set(true)
-		})
-
-		window.electron.on.updateAvailable(result => {
-			this.updateAvailable.set(result !== null ? 'yes' : 'no')
-		})
-		window.electron.on.updateError(() => {
-			this.updateAvailable.set('error')
-		})
+		this.unsubscribeListeners.push(
+			window.electron.on.minimized(() => {
+				this.isMaximized.set(false)
+			}),
+			window.electron.on.maximized(() => {
+				this.isMaximized.set(true)
+			}),
+			window.electron.on.updateAvailable(result => {
+				this.updateAvailable.set(result !== null ? 'yes' : 'no')
+			}),
+			window.electron.on.updateError(() => {
+				this.updateAvailable.set('error')
+			}),
+		)
 		this.updateAvailable.set(await window.electron.invoke.getUpdateAvailable())
+	}
+
+	ngOnDestroy() {
+		this.unsubscribeListeners.forEach(unsubscribe => unsubscribe())
 	}
 
 	minimize() {

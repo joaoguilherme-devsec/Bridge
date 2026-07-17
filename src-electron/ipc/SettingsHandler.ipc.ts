@@ -15,7 +15,7 @@ function readSettings() {
 		const settings = JSON.parse(readFileSync(settingsPath, 'utf8')) as Partial<Settings>
 		return Object.assign(_.cloneDeep(defaultSettings), settings)
 	} catch (err) {
-		if (err?.code === 'ENOENT') {
+		if (err instanceof Error && (err as NodeJS.ErrnoException).code === 'ENOENT') {
 			saveSettings(_.cloneDeep(defaultSettings))
 		} else {
 			console.error('Failed to load settings. Default settings will be used.\n' + inspect(err))

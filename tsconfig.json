@@ -22,9 +22,13 @@
     "typeRoots": [
       "./node_modules/@types"
     ],
-    "noErrorTruncation": true
+    "noErrorTruncation": true,
+    "alwaysStrict": true,
+    "strictFunctionTypes": true,
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true
   },
-	"angularCompilerOptions": {
+  "angularCompilerOptions": {
     "strictTemplates": true
   }
 }

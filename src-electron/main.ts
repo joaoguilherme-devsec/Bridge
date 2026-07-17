@@ -120,6 +120,10 @@ function createBrowserWindow(windowState: windowStateKeeper.State) {
 			preload: path.join(_dirname, 'preload.mjs'),
 			allowRunningInsecureContent: (isDevBuild) ? true : false,
 			textAreasAreResizable: false,
+			// Explicit even though these match Electron's secure defaults: the renderer only talks to the
+			// main process through the preload's contextBridge API, and must never get direct Node access.
+			contextIsolation: true,
+			nodeIntegration: false,
 		},
 		simpleFullscreen: true,
 		fullscreenable: false,

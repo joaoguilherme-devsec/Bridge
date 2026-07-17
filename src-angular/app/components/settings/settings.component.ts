@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core'
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject, signal } from '@angular/core'
 import { ReactiveFormsModule, FormsModule, FormControl } from '@angular/forms'
 import { NgClass } from '@angular/common'
 
@@ -12,8 +12,10 @@ import { themes } from 'src-shared/Settings'
 	imports: [ReactiveFormsModule, FormsModule, NgClass],
 	templateUrl: './settings.component.html',
 })
-export class SettingsComponent implements OnInit {
+export class SettingsComponent implements OnInit, OnDestroy {
 	settingsService = inject(SettingsService)
+
+	private unsubscribeListeners: Array<() => void> = []
 
 	@ViewChild('themeDropdown', { static: true }) themeDropdown: ElementRef
 
@@ -74,25 +76,38 @@ export class SettingsComponent implements OnInit {
 	}
 
 	async ngOnInit() {
-		window.electron.on.updateAvailable(result => {
-			this.updateAvailable.set(result !== null ? 'yes' : 'no')
-			this.updateRetrying.set(false)
-			if (result !== null) {
-				this.downloadUpdateText.set(`Download Update (${result.version})`)
-			}
-		})
-		window.electron.on.updateError(err => {
-			console.log(err)
-			this.updateAvailable.set('error')
-			this.updateRetrying.set(false)
-			this.retryUpdateText.set('Failed to check for update')
-		})
+		this.unsubscribeListeners.push(
+			window.electron.on.updateAvailable(result => {
+				this.updateAvailable.set(result !== null ? 'yes' : 'no')
+				this.updateRetrying.set(false)
+				if (result !== null) {
+					this.downloadUpdateText.set(`Download Update (${result.version})`)
+				}
+			}),
+			window.electron.on.updateError(err => {
+				console.log(err)
+				this.updateAvailable.set('error')
+				this.updateRetrying.set(false)
+				this.retryUpdateText.set('Failed to check for update')
+			}),
+			window.electron.on.updateProgress(result => {
+				this.downloadUpdateText.set(`Downloading... (${result.percent.toFixed(0)}%)`)
+			}),
+			window.electron.on.updateDownloaded(() => {
+				this.downloadUpdateText.set('Quit and install update')
+				this.updateDownloaded.set(true)
+			}),
+		)
 		window.electron.invoke.getCurrentVersion().then(version => {
 			this.currentVersion.set(`v${version}`)
 		})
 		window.electron.invoke.getUpdateAvailable().then(isAvailable => {
 			this.updateAvailable.set(isAvailable)
 		})
+	}
+
+	ngOnDestroy() {
+		this.unsubscribeListeners.forEach(unsubscribe => unsubscribe())
 	}
 
 	async addLibraryFolder() {
@@ -169,13 +184,6 @@ export class SettingsComponent implements OnInit {
 				this.updateDownloading.set(true)
 				window.electron.emit.downloadUpdate()
 				this.downloadUpdateText.set('Downloading... (0%)')
-				window.electron.on.updateProgress(result => {
-					this.downloadUpdateText.set(`Downloading... (${result.percent.toFixed(0)}%)`)
-				})
-				window.electron.on.updateDownloaded(() => {
-					this.downloadUpdateText.set('Quit and install update')
-					this.updateDownloaded.set(true)
-				})
 			}
 		}
 	}

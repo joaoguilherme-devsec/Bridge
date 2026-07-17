@@ -21,6 +21,13 @@ interface ImageServiceEvents {
 	progress: (progress: ArtDownloadProgress) => void
 }
 
+/** Shape of the fields Bridge reads from an iTunes Search API album response */
+interface ITunesSearchResponse {
+	results?: Array<{
+		artworkUrl100?: string
+	}>
+}
+
 class ImageService extends EventEmitter<ImageServiceEvents> {
 
 	/**
@@ -63,7 +70,7 @@ class ImageService extends EventEmitter<ImageServiceEvents> {
 				res.on('data', chunk => data += chunk)
 				res.on('end', () => {
 					try {
-						const json = JSON.parse(data)
+						const json = JSON.parse(data) as ITunesSearchResponse
 						const results: AlbumArtResult[] = []
 
 						for (const item of json.results || []) {
@@ -139,19 +146,39 @@ class ImageService extends EventEmitter<ImageServiceEvents> {
 			console.error('Failed to clean up existing files:', err)
 		}
 
+		return this.fetchImage(imageUrl, destPath, chartId, type)
+	}
+
+	/**
+	 * Fetch an image over HTTP(S) to destPath, following a bounded number of redirects
+	 */
+	private fetchImage(
+		imageUrl: string, destPath: string, chartId: number, type: 'album' | 'background', redirectCount = 0,
+	): Promise<string> {
+		const MAX_REDIRECTS = 5
+
 		return new Promise((resolve, reject) => {
+			if (redirectCount > MAX_REDIRECTS) {
+				reject(new Error('Too many redirects'))
+				return
+			}
+
 			const protocol = imageUrl.startsWith('https') ? https : http
 
 			const request = protocol.get(imageUrl, response => {
 				// Handle redirects
 				if (response.statusCode === 301 || response.statusCode === 302) {
 					const redirectUrl = response.headers.location
+					// Drain the response so the socket can be released back to the pool
+					response.resume()
 					if (redirectUrl) {
-						this.downloadImage({ ...options, imageUrl: redirectUrl })
+						this.fetchImage(redirectUrl, destPath, chartId, type, redirectCount + 1)
 							.then(resolve)
 							.catch(reject)
-						return
+					} else {
+						reject(new Error('Redirect response missing Location header'))
 					}
+					return
 				}
 
 				if (response.statusCode !== 200) {
