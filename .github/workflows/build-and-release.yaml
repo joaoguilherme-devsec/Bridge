@@ -87,6 +87,8 @@ jobs:
           path: ./release/bridge-mac.tar.gz
   release-all:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     needs:
       - build-and-upload-linux
       - build-and-upload-macos
@@ -115,6 +117,6 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: "releaseables/*"
-          tag: ${{ github.ref.name  }}
+          tag: ${{ github.ref_name }}
           replacesArtifacts: true
           allowUpdates: true
