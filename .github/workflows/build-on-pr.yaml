@@ -7,11 +7,11 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: v18.19.0
+          node-version: '22.12.0'
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Build the app
         shell: bash
         run: |
@@ -21,11 +21,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: v18.19.0
+          node-version: '22.12.0'
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Fix apt and install builder dependencies
         shell: bash
         run: |
@@ -44,11 +44,11 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: v18.19.0
+          node-version: '22.12.0'
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Build the app
         shell: bash
         run: |
