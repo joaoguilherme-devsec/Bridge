@@ -5,30 +5,42 @@
 <img align="center" src="./src-angular/assets/images/example.png"/>
 <hr>
 
-**Bridge** is a desktop application that allows you to search for and download charts that can be played in  games like Clone Hero, YARG, etc...
+**Bridge** is a desktop application that allows you to search for, download, and manage charts for games like Clone Hero, YARG, etc.
 
 This is the desktop version of [Chorus Encore](https://www.enchor.us/).
 
+> This is a fork of [Geomitron/Bridge](https://github.com/Geomitron/Bridge) with an expanded local library manager (catalog scanning, video sync, art studio, and lyrics tooling) on top of the original search-and-download experience.
+
 ## Setup
 
-Head over to the [Releases](https://github.com/Geomitron/Bridge/releases) page to download the install wizard. (Windows 10/11, Mac, and Linux versions are available)
+Head over to the [Releases](https://github.com/joaoguilherme-devsec/Bridge/releases) page to download the install wizard. (Windows 10/11, Mac, and Linux versions are available)
 
 ## Features
 
-- ✅ Find all charts that can be found on Chorus Encore.
-- ✅ Download any chart directly into your chart library as a chart folder or `.sng` file.
-- ✅ Multi-select songs to add to the download queue.
-- ✅ Cancel and retry downloads.
-- ✅ In-app update checking and downloading.
-- ✅ A variety of themes.
-- ✅ Advanced song search.
-- ✅ Chart issue scanner (for people making charts).
+### Search & download
 
-### What's new in v3.4.0
+- Find all charts that can be found on Chorus Encore.
+- Download any chart directly into your chart library as a chart folder or `.sng` file.
+- Multi-select songs to add to the download queue.
+- Cancel and retry downloads.
+- Advanced song search, with a "Quality Reviewed" filter for drum charts.
+- Chart issue scanner (for people making charts).
 
-- Add new "Quality Reviewed" filter for drum charts
+### Library manager
 
-### Development
+- Scan one or more local folders into a searchable, filterable chart catalog (backed by a local SQLite database, with incremental rescans and duplicate detection).
+- **Video Sync** — search and download YouTube/Vimeo/Dailymotion/Archive.org background videos for charts via `yt-dlp`, or import a local video file.
+- **Art Studio** — fetch album art from iTunes and generate blurred/gradient background images for charts, individually or in batch.
+- **Lyrics** — search LRCLIB for synced lyrics and inject them directly into `.chart` or `.mid` files.
+
+### General
+
+- In-app update checking and downloading.
+- A variety of themes, including custom theme support.
+
+See the [Releases](https://github.com/joaoguilherme-devsec/Bridge/releases) page for the full changelog.
+
+## Development
 
 Built using Node.js, Angular, and Electron.
 
@@ -40,8 +52,19 @@ After installing Node.js and cloning the repository, install dependencies and ru
 $ npm install && npm start
 ```
 
-### Socials
+Video Sync and Art Studio's background generation rely on [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) and `ffmpeg` being available on your `PATH`.
+
+Other useful scripts (see `package.json` for the full list):
+
+- `npm run build:windows` / `build:mac` / `build:linux` — build a production installer for the current platform.
+- `npm run release` — build production installers for all platforms.
+
+## License
+
+Bridge is licensed under [GPL-3.0](./LICENSE).
+
+## Socials
 
 To discuss the project and make suggestions, please join the [Discord](https://discord.gg/cqaUXGm)
 
-To help me pay for the server costs, please check out the [Patreon](https://www.patreon.com/ChorusEncore701)
+To help pay for the server costs of the original Chorus Encore project, please check out the [Patreon](https://www.patreon.com/ChorusEncore701)
